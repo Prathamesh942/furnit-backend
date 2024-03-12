@@ -13,6 +13,9 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
+app.get("/", (req, res) => {
+  res.json("hola amigo");
+});
 app.use("/api/user", userRouter);
 
 export { app };
