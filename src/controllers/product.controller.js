@@ -41,7 +41,29 @@ const addProduct = asyncHandler(async (req,res)=>{
 
 const fetchProducts = asyncHandler(async (req, res) => {
     // Fetch all products from the database
-    const products = await Product.find();
+    const { color, category, priceRange } = req.query;
+    console.log(req.query);
+  
+  // Define filter object
+  const filter = {};
+
+  // Add filters to the filter object if they are not null
+  if (color !== 'none') {
+    filter.color = color;
+  }
+  if (category !== 'none') {
+    filter.category = category;
+  }
+  if (priceRange !== 'none') {
+    // Parse price range if needed (assuming it's a string like "minPrice-maxPrice")
+    // Add price range filter to the filter object
+    filter.price = { $gte: parseFloat(priceRange.min), $lte: parseFloat(priceRange.max) };
+  }
+
+  // Fetch products from the database based on the filter
+  // console.log(filter);
+  const products = await Product.find(filter);
+  // console.log(products);
   
     // Check if products exist
     if (!products || products.length === 0) {
