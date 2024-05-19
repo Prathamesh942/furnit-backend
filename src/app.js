@@ -23,6 +23,6 @@ app.use(cookieParser());
 
 app.use("/api/user", userRouter);
 app.use("/api/product", productRouter);
-app.get("/",(req,res)=>{res.json("hii")})
+app.get("/",verifyJWT,(req,res)=>{res.json("hii")})
 
 export { app };

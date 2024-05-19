@@ -1,5 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
+import { Product } from "../models/product.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 
@@ -63,8 +64,87 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-const cart = asyncHandler(async (req,res)=>{
-  return res.json(new ApiResponse(200,{},"here is your cart, sir"))
-})
+const cart = async (req, res) => {
+  try {
+    // console.log(req.user);
+    // Retrieve the user's ID from the JWT token
+    // console.log();
+    const {userId} = req.body;
+    console.log(userId);
 
-export { registerUser, loginUser, cart };
+    // Find the user in the database using the user ID
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Retrieve the product IDs from the user's cart array
+    const productIds = user.cart;
+
+    // Fetch the products from the database based on the product IDs
+    const products = await Product.find({ _id: { $in: productIds } });
+
+    // Return the array of products
+    res.json(products);
+  } catch (error) {
+    console.error("Error fetching cart:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const addcart = async (req, res) => {
+  try {
+    // Retrieve the product ID from the request body
+    const {userId, productId } = req.body;
+
+    // Retrieve the user's ID from the JWT token
+    // const userId = req.user._id;
+
+    // Find the user in the database using the user ID
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Add the product ID to the user's cart array if it's not already there
+    if (!user.cart.includes(productId)) {
+      user.cart.push(productId);
+      await user.save();
+    }
+
+    res.status(200).json({ message: "Product added to cart successfully" });
+  } catch (error) {
+    console.error("Error adding product to cart:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const checkout = async (req, res) => {
+  try {
+    // Retrieve the user's ID from the request body
+    const { userId } = req.body;
+
+    // Find the user in the database using the user ID
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Move items from cart to purchasedProducts
+    user.purchasedProducts = user.purchasedProducts.concat(user.cart);
+    user.cart = [];
+
+    // Save the updated user document
+    await user.save();
+
+    res.status(200).json({ message: "Checkout successful", user });
+  } catch (error) {
+    console.error("Error during checkout:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export { registerUser, loginUser, cart, addcart, checkout };

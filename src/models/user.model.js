@@ -16,6 +16,18 @@ const userSchema = new Schema({
     type: String,
     required: [true],
   },
+  cart: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'Product' // Assuming you have a Product model
+    }
+  ],
+  purchasedProducts: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'Product' // Assuming you have a Product model
+    }
+  ]
 });
 
 userSchema.pre("save", async function (next) {
