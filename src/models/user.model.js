@@ -18,16 +18,28 @@ const userSchema = new Schema({
   },
   cart: [
     {
-      type: Schema.Types.ObjectId,
-      ref: 'Product' // Assuming you have a Product model
-    }
+      product: {
+        type: Schema.Types.ObjectId,
+        ref: "Product",
+      },
+      quantity: {
+        type: Number,
+        default: 1,
+      },
+    },
   ],
   purchasedProducts: [
     {
-      type: Schema.Types.ObjectId,
-      ref: 'Product' // Assuming you have a Product model
-    }
-  ]
+      product: {
+        type: Schema.Types.ObjectId,
+        ref: "Product",
+      },
+      quantity: {
+        type: Number,
+        default: 1, // Default quantity if not specified
+      },
+    },
+  ],
 });
 
 userSchema.pre("save", async function (next) {

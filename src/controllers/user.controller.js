@@ -9,9 +9,7 @@ const registerUser = asyncHandler(async (req, res) => {
   if ([name, email, password].some((field) => field?.trim() === "")) {
     throw new ApiError(400, "All fields are required");
   }
-
   const existedUser = await User.findOne({ email });
-
   if (existedUser) {
     throw new ApiError(409, "user with email or username already exist");
   }
@@ -50,6 +48,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const options = {
     httpOnly: true,
     secure: true,
+    sameSite: "None",
   };
 
   return res
@@ -66,27 +65,13 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const cart = async (req, res) => {
   try {
-    // console.log(req.user);
-    // Retrieve the user's ID from the JWT token
-    // console.log();
-    const {userId} = req.body;
-    console.log(userId);
-
-    // Find the user in the database using the user ID
-    const user = await User.findById(userId);
-
+    const userId = req.user._id;
+    const user = await User.findById(userId).populate("cart.product");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    // Retrieve the product IDs from the user's cart array
-    const productIds = user.cart;
-
-    // Fetch the products from the database based on the product IDs
-    const products = await Product.find({ _id: { $in: productIds } });
-
-    // Return the array of products
-    res.json(products);
+    console.log(user.cart, "populated"); // This should now log detailed product information
+    res.json(user.cart); // Respond with the populated cart data
   } catch (error) {
     console.error("Error fetching cart:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -95,24 +80,32 @@ const cart = async (req, res) => {
 
 const addcart = async (req, res) => {
   try {
-    // Retrieve the product ID from the request body
-    const {userId, productId } = req.body;
-
-    // Retrieve the user's ID from the JWT token
-    // const userId = req.user._id;
-
-    // Find the user in the database using the user ID
+    const userId = req.user._id;
+    const { productId, quantity = 1 } = req.body;
     const user = await User.findById(userId);
+
+    console.log(productId);
+    console.log(quantity);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Add the product ID to the user's cart array if it's not already there
-    if (!user.cart.includes(productId)) {
-      user.cart.push(productId);
-      await user.save();
+    console.log(user.cart);
+
+    let cartItem = user.cart.find((item) => item.product?.equals(productId));
+
+    console.log("product exists", cartItem);
+
+    if (!cartItem) {
+      user.cart.push({ product: productId, quantity });
+    } else {
+      console.log(cartItem.quantity);
+      cartItem.quantity += quantity;
+      console.log(cartItem.quantity);
     }
+
+    await user.save();
 
     res.status(200).json({ message: "Product added to cart successfully" });
   } catch (error) {
@@ -121,23 +114,45 @@ const addcart = async (req, res) => {
   }
 };
 
-const checkout = async (req, res) => {
+const remove = async (req, res) => {
   try {
-    // Retrieve the user's ID from the request body
-    const { userId } = req.body;
-
-    // Find the user in the database using the user ID
+    const userId = req.user._id;
+    const { productId } = req.body;
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Move items from cart to purchasedProducts
+    const index = user.cart.findIndex((item) => item._id.equals(productId));
+
+    if (index === -1) {
+      return res.status(404).json({ message: "Product not found in cart" });
+    }
+
+    user.cart.splice(index, 1);
+
+    await user.save();
+
+    res.status(200).json({ message: "Product removed from cart successfully" });
+  } catch (error) {
+    console.error("Error removing product from cart:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const checkout = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     user.purchasedProducts = user.purchasedProducts.concat(user.cart);
     user.cart = [];
 
-    // Save the updated user document
     await user.save();
 
     res.status(200).json({ message: "Checkout successful", user });
@@ -147,4 +162,4 @@ const checkout = async (req, res) => {
   }
 };
 
-export { registerUser, loginUser, cart, addcart, checkout };
+export { registerUser, loginUser, cart, addcart, checkout, remove };

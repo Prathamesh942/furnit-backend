@@ -1,15 +1,21 @@
 import { Router } from "express";
-import { loginUser, registerUser,cart,addcart,checkout } from "../controllers/user.controller.js";
+import {
+  loginUser,
+  registerUser,
+  cart,
+  addcart,
+  checkout,
+  remove,
+} from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-
-
 router.route("/register").post(registerUser);
 router.route("/login").post(loginUser);
-router.route("/cart").post( cart);
-router.route("/add").post( addcart);
-router.route("/check").post(checkout);
+router.route("/cart").get(verifyJWT, cart);
+router.route("/add").post(verifyJWT, addcart);
+router.route("/check").post(verifyJWT, checkout);
+router.route("/remove").delete(verifyJWT, remove);
 
 export default router;
