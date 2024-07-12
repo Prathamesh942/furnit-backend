@@ -36,7 +36,7 @@ const userSchema = new Schema({
       },
       quantity: {
         type: Number,
-        default: 1, // Default quantity if not specified
+        default: 1,
       },
     },
   ],

@@ -6,6 +6,7 @@ import {
   addcart,
   checkout,
   remove,
+  orders,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -17,5 +18,6 @@ router.route("/cart").get(verifyJWT, cart);
 router.route("/add").post(verifyJWT, addcart);
 router.route("/check").post(verifyJWT, checkout);
 router.route("/remove").delete(verifyJWT, remove);
+router.route("/orders").get(verifyJWT, orders);
 
 export default router;

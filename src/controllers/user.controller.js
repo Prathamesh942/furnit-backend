@@ -124,7 +124,8 @@ const remove = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const index = user.cart.findIndex((item) => item._id.equals(productId));
+    console.log(user.cart, productId);
+    const index = user.cart.findIndex((item) => item.product.equals(productId));
 
     if (index === -1) {
       return res.status(404).json({ message: "Product not found in cart" });
@@ -143,16 +144,21 @@ const remove = async (req, res) => {
 
 const checkout = async (req, res) => {
   try {
-    const { userId } = req.body;
-    const user = await User.findById(userId);
+    const userId = req.user._id;
+    const user = await User.findById(userId).populate("cart.product");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    user.purchasedProducts = user.purchasedProducts.concat(user.cart);
+    user.purchasedProducts = user.purchasedProducts.concat(
+      user.cart.map((item) => ({
+        product: item.product,
+        quantity: item.quantity,
+      }))
+    );
     user.cart = [];
-
+    console.log(user);
     await user.save();
 
     res.status(200).json({ message: "Checkout successful", user });
@@ -162,4 +168,25 @@ const checkout = async (req, res) => {
   }
 };
 
-export { registerUser, loginUser, cart, addcart, checkout, remove };
+const orders = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).populate(
+      "purchasedProducts.product"
+    );
+    console.log(user);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ order: user.purchasedProducts });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export { registerUser, loginUser, cart, addcart, checkout, remove, orders };
